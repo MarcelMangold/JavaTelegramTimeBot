@@ -14,17 +14,16 @@ public class PropertyReader {
 	public PropertyReader() {
 		prop =   new Properties();
 		
-		String fileName = System.getProperty("user.dir") + "\\resources\\config\\config.properties";
-		System.out.println(fileName);
+		String fileName = System.getProperty("user.dir") + "\\src\\main\\resources\\config\\config.properties";
 		InputStream is = null;
 		try {
 		    is = new FileInputStream(fileName);
 		    prop.load(is);
 		} catch (FileNotFoundException ex) {
-		    throw new RuntimeException("Config file" + fileName + "doesn't exist");
+		    throw new RuntimeException("Config file " + fileName + " doesn't exist");
 		}
 		catch (IOException ex) {
-			 throw new RuntimeException("Error while reading" + fileName );
+			 throw new RuntimeException("Error while readin g" + fileName );
 		}
 		
 	}
