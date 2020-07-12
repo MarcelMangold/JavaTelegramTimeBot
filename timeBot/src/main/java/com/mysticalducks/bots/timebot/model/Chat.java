@@ -26,6 +26,12 @@ public class Chat implements Serializable {
 	@Id
 	@Column(name = "id", unique = true)
 	private int id;
+	
+	public Chat() {}
+	
+	public Chat(int id) {
+		this.id = id;
+	}
 
 	public int getID() {
 		return id;
