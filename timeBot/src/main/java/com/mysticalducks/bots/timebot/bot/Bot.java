@@ -3,14 +3,8 @@ package com.mysticalducks.bots.timebot.bot;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.TelegramBotsApi;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -19,8 +13,6 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import com.mysticalducks.bots.timebot.db.DBManager;
 import com.mysticalducks.bots.timebot.util.PropertyReader;
 import com.mysticalducks.bots.timebot.util.PropertyReader.PropertyType;
-
-import static java.lang.Math.toIntExact;
 
 public class Bot extends TelegramLongPollingBot {
 	private final String endpoint = "https://api.telegram.org/";
@@ -31,6 +23,7 @@ public class Bot extends TelegramLongPollingBot {
 		PropertyReader propReader = new PropertyReader();
 		this.token = propReader.getProperty(PropertyType.BOT_TOKEN);
 		this.botUsername = propReader.getProperty(PropertyType.BOT_USERNAME);
+		start();
 	}
 
 	public void start() {
@@ -39,9 +32,7 @@ public class Bot extends TelegramLongPollingBot {
 		System.out.println("---------------");
 	}
 
-	@Override
 	public void onUpdateReceived(Update update) {
-
 		// We check if the update has a message and the message has text
 		if (update.hasMessage() && update.getMessage().hasText()) {
 			String message_text = update.getMessage().getText();
@@ -51,8 +42,8 @@ public class Bot extends TelegramLongPollingBot {
 						.setChatId(chat_id)
 						.setText("Herzlich willkommen beim TimeBot");
 				InlineKeyboardMarkup markupInline = new InlineKeyboardMarkup();
-				List<List<InlineKeyboardButton>> rowsInline = new ArrayList<>();
-				List<InlineKeyboardButton> rowInline = new ArrayList<>();
+				List<List<InlineKeyboardButton>> rowsInline = new ArrayList<List<InlineKeyboardButton>>();
+				List<InlineKeyboardButton> rowInline = new ArrayList<InlineKeyboardButton>();
 				rowInline.add(
 						new InlineKeyboardButton().setText("/starteZeit").setCallbackData("/startTimeRecording"));
 				// Set the keyboard to the markup
@@ -74,10 +65,9 @@ public class Bot extends TelegramLongPollingBot {
 			long chat_id = update.getCallbackQuery().getMessage().getChatId();
 
 		}
-
+		
 	}
 
-	@Override
 	public String getBotUsername() {
 		return botUsername;
 	}
@@ -86,5 +76,9 @@ public class Bot extends TelegramLongPollingBot {
 	public String getBotToken() {
 		return token;
 	}
+	
+
+
+	
 
 }

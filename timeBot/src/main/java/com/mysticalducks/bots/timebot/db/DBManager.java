@@ -22,6 +22,7 @@ public class DBManager {
 			entityManager.close();
 			return list;
 		}catch(Exception e) {
+			System.out.println(e);
 			System.err.println("error while reading the following sql statement: " + query);
 		}
 		
@@ -82,7 +83,7 @@ public class DBManager {
 	}
 	
 	public List<Chat> selectChatStatement(){
-		return queryChatStatement("FROM Chat");
+		return queryChatStatement("SELECT c FROM Chat c");
 	}
 
 }

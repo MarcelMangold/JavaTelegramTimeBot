@@ -19,7 +19,7 @@ class DbManagerTest {
 	@Test
 	@Order(1)
 	void test_queryStatement() {
-		List<Object> list = db.queryStatement("FROM Chat");
+		List<Object> list = db.queryStatement("Select c FROM Chat c");
 		assertTrue(list.size() > 0);
 		assertEquals(list.get(0).getClass(), Chat.class);
 	}
@@ -27,7 +27,7 @@ class DbManagerTest {
 	@Test
 	@Order(2)
 	void test_queryChatStatement() {
-		List<Chat> list = db.queryChatStatement("FROM Chat");
+		List<Chat> list = db.queryChatStatement("Select c FROM Chat c");
 		assertTrue(list.size() > 0);
 	}
 	
