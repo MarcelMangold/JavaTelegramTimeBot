@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
 import com.mysticalducks.bots.timebot.model.Chat;
+import com.mysticalducks.bots.timebot.model.User
 
 @TestMethodOrder(OrderAnnotation)
 class DBManagerTest {
@@ -33,6 +34,19 @@ class DBManagerTest {
 	
 	@Test
 	@Order(3)
+	def void test_insertAndDeleteUser() {
+		val int userId = -1
+		val user = new User(userId)
+		
+		assertEquals(false,db.existsUser(userId))
+		
+		assertEquals(true,db.existsUser(userId))
+		
+		db.deleteStatementById(user, userId)
+	}
+	
+	@Test
+	@Order(3)
 	def void test_selectChatStatement() {
 		val List<Chat> list = db.selectChatStatement();
 		assertTrue(list.size() > 0);
@@ -44,8 +58,7 @@ class DBManagerTest {
 		val Chat chat = new Chat(-1);
 		
 		val result = db.insertStatement(chat);
-		assertEquals(null, result);
-		
+		assertEquals(true, result);
 	}
 	
 	@Test

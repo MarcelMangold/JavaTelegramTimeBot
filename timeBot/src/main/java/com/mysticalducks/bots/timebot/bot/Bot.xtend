@@ -13,70 +13,86 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import com.mysticalducks.bots.timebot.db.DBManager;
 import com.mysticalducks.bots.timebot.util.PropertyReader;
 import com.mysticalducks.bots.timebot.util.PropertyReader.PropertyType;
+import org.telegram.abilitybots.api.objects.Ability
+import org.telegram.abilitybots.api.objects.Ability.AbilityBuilder
+import org.telegram.abilitybots.api.bot.AbilityBot
 
-class Bot extends TelegramLongPollingBot {
-	final String endpoint = "https://api.telegram.org/";
-	final String token;
-	final String botUsername;
+import static org.telegram.abilitybots.api.objects.Locality.ALL;
+import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
+import com.mysticalducks.bots.timebot.model.User
+
+class Bot extends AbilityBot {
 	
+	var DBManager dbManager = null
 	
-	
-	new() {
-		val propReader = new PropertyReader();
-		this.token = propReader.getProperty(PropertyType.BOT_TOKEN);
-		this.botUsername = propReader.getProperty(PropertyType.BOT_USERNAME);
-		start();
+	new(String token, String botUsername) {
+		super(token, botUsername)
+		dbManager = new DBManager();
 	}
 
-	def void start() {
-		val dbManager = new DBManager();
-		System.out.println(dbManager.selectChatStatement().get(0).getID());
-		System.out.println("---------------");
+	
+	def Ability sayHello()  {
+		return Ability.builder
+			.name("hello")
+			.info("Hello my friend")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx | 
+				println(ctx)
+				silent.send("Hello world!", ctx.chatId())
+			].build
+	}
+	
+	def Ability help() {
+		return Ability.builder
+			.name("help")
+			.info("show command list")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx | 
+				println(ctx)
+				silent.sendMd(
+				'''
+				The following options are available:
+					- /start (start timetracking)
+					- /finish (finish timetracking)
+					- /show time
+				'''
+				, ctx.chatId())
+			].build
+	}
+	
+	def Ability start() {
+		return Ability.builder
+			.name("start")
+			.info("start time tracking")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx | 
+				dbManager.existsUser(ctx.user.id)
+				silent.sendMd(
+				'''
+				Start timetracking...
+				'''
+				, ctx.chatId())
+			].build
 	}
 
-	override void onUpdateReceived(Update update) {
-		// We check if the update has a message and the message has text
-//		if (update.hasMessage() && update.getMessage().hasText()) {
-//			val message_text = update.getMessage().getText();
-//			val chat_id = update.getMessage().getChatId();
-//			if (update.getMessage().getText().equals("/start")) {
-//				val message = new SendMessage() // Create a message object object
-//						.setChatId(chat_id)
-//						.setText("Herzlich willkommen beim TimeBot");
-//				val markupInline = new InlineKeyboardMarkup();
-//				val List<List<InlineKeyboardButton>> rowsInline = new ArrayList<List<InlineKeyboardButton>>();
-//				val List<InlineKeyboardButton> rowInline = new ArrayList<InlineKeyboardButton>();
-//				rowInline.add(
-//						new InlineKeyboardButton().setText("/starteZeit").setCallbackData("/startTimeRecording"));
-//				// Set the keyboard to the markup
-//				rowsInline.add(rowInline);
-//				// Add it to the message
-//				markupInline.setKeyboard(rowsInline);
-//				message.setReplyMarkup(markupInline);
-//				try {
-//					execute(message); // Sending our message object to user
-//				} catch (TelegramApiException e) {
-//					e.printStackTrace();
-//				}
-//			}
+	
+
+//	override String getBotUsername() {
+//		return botUsername;
+//	}
 //
-//		} else if (update.hasCallbackQuery()) {
-//			// Set variables
-//			val call_data = update.getCallbackQuery().getData();
-//			val message_id = update.getCallbackQuery().getMessage().getMessageId();
-//			val chat_id = update.getCallbackQuery().getMessage().getChatId();
-//
-//		}
-//		
-	}
+//	override String getBotToken() {
+//		return token;
+//	}
 	
-
-	override String getBotUsername() {
-		return botUsername;
-	}
-
-	override String getBotToken() {
-		return token;
+	override creatorId() {
+		return 123
 	}
 	
 	

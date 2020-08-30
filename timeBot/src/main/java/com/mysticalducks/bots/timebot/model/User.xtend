@@ -14,10 +14,16 @@ import javax.persistence.Table;
 class User   {
 	private static final long serialVersionUID = 4L;
 
+	new() {} 
+	
+	new(int userID) {
+		id = userID
+	}
+	
 	@Id
 	@Column(name = "id", unique = true)
 	private int id;
-
+	
 	def int getID() {
 		return id;
 	}
