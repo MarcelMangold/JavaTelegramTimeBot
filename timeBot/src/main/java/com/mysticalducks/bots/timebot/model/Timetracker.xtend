@@ -20,7 +20,7 @@ import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name="timetracker")
-public class Timetracker   {
+class Timetracker   {
 	private static final long serialVersionUID = 5L;
 
 	@Id
@@ -42,85 +42,85 @@ public class Timetracker   {
 	@Column(name = "isactive", nullable = false)
 	private Boolean isActive;
 	
-	@ManyToOne(targetEntity = Project.class, fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@ManyToOne(targetEntity = Project, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "project_id", referencedColumnName = "id")
     @NotNull
     private Project project;
 	
-	@ManyToOne(targetEntity = User.class, fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@ManyToOne(targetEntity = User, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @NotNull
     private User user;
 	
-	@ManyToOne(targetEntity = Chat.class, fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@ManyToOne(targetEntity = Chat, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "chat_id", referencedColumnName = "id")
     @NotNull
     private Chat chat;
 	
 
-	public int getID() {
+	def int getID() {
 		return id;
 	}
 
-	public void setID(int id) {
+	def void setID(int id) {
 		this.id = id;
 	}
 	
-	public Date getStartTime() {
+	def Date getStartTime() {
 		return startTime;
 	}
 
-	public void setStartTime(Date startTime) {
+	def void setStartTime(Date startTime) {
 		this.startTime = startTime;
 	}
 
 	
-	public Date getEndTime() {
+	def Date getEndTime() {
 		return endTime;
 	}
 
-	public void setEndTime(Date endTime) {
+	def void setEndTime(Date endTime) {
 		this.endTime = endTime;
 	}
 
 	
-	public String getNotice() {
+	def String getNotice() {
 		return notice;
 	}
 
-	public void setNotice(String notice) {
+	def void setNotice(String notice) {
 		this.notice = notice;
 	}
 	
-	public Boolean isActive() {
+	def Boolean isActive() {
 		return isActive;
 	}
 
-	public void setActive(Boolean isActive) {
+	def void setActive(Boolean isActive) {
 		this.isActive = isActive;
 	}
 	
-	public Project getProject() {
+	def Project getProject() {
 		return project;
 	}
 
-	public void setProject(Project project) {
+	def void setProject(Project project) {
 		this.project = project;
 	}
 	
-	public User getUser() {
+	def User getUser() {
 		return user;
 	}
 
-	public void setUser(User user) {
+	def void setUser(User user) {
 		this.user = user;
 	}
 	
-	public Chat getChat() {
+	def Chat getChat() {
 		return chat;
 	}
 
-	public void setChat(Chat chat) {
+	def void setChat(Chat chat) {
 		this.chat = chat;
 	}
 

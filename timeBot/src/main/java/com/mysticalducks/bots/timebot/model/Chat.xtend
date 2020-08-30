@@ -1,28 +1,33 @@
 package com.mysticalducks.bots.timebot.model;
 
+import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-// import javax.persistence.GeneratedValue;
-// import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
 
 @Entity
-@Table(name="user_management")
-public class User   {
-	private static final long serialVersionUID = 4L;
-
+@Table(name = "chat")
+class Chat implements Serializable {
+	val static long serialVersionUID = 3L;
+	
 	@Id
 	@Column(name = "id", unique = true)
 	private int id;
+	
+	public new(){}
+	
+	public new (int id) {
+		this.id = id;
+	}
 
-	public int getID() {
+	def int getID() {
 		return id;
 	}
 
-	public void setID(int id) {
+	def void setID(int id) {
 		this.id = id;
 	}
 

@@ -1,24 +1,21 @@
 package com.mysticalducks.bots.timebot.db;
 
 import java.util.List;
-import javax.persistence.EntityManager;
-import com.mysticalducks.bots.timebot.model.Chat;
+import com.mysticalducks.bots.timebot.model.Chat
+
+class DBManager {
 
 
-public class DBManager {
-
-
-	public DBManager() {
+	new() {
 
 	}
 
-	public List<Object> queryStatement(String query) {
+	def List<Object> queryStatement(String query) {
 		
-		EntityManager entityManager = JPAUtility.getEntityManager();
+		val entityManager = JPAUtility.getEntityManager();
 		try {
 			entityManager.getTransaction().begin();
-			@SuppressWarnings("unchecked")
-			List<Object> list =  entityManager.createQuery(query).getResultList();
+			val List<Object> list =  entityManager.createQuery(query).getResultList();
 			entityManager.close();
 			return list;
 		}catch(Exception e) {
@@ -29,9 +26,9 @@ public class DBManager {
 		return null;
 	}
 	
-	public String insertStatement(Object object) {
+	def String insertStatement(Object object) {
 		try {
-			EntityManager entityManager = JPAUtility.getEntityManager();	
+			val entityManager = JPAUtility.getEntityManager();	
 			entityManager.getTransaction().begin();
 			entityManager.persist(object);
 			entityManager.getTransaction().commit();
@@ -43,10 +40,10 @@ public class DBManager {
 		return null;
 	}
 	
-	public String deleteStatementById(Object object, int key) {
+	def String deleteStatementById(Object object, int key) {
 		try {
-			EntityManager entityManager = JPAUtility.getEntityManager();	
-			Object obj = entityManager.find(object.getClass(),key);
+			val entityManager = JPAUtility.getEntityManager();	
+			val obj = entityManager.find(object.getClass(),key);
 			//start removing
 			entityManager.getTransaction().begin();
 			entityManager.remove(obj);
@@ -59,10 +56,10 @@ public class DBManager {
 		return null;
 	}
 	
-	public Object findKeyValue(Object object, int key) {
+	def Object findKeyValue(Object object, int key) {
 		try {
-			EntityManager entityManager = JPAUtility.getEntityManager();	
-			Object obj = entityManager.find(object.getClass(), key);
+			val entityManager = JPAUtility.getEntityManager();	
+			val obj = entityManager.find(object.getClass(), key);
 			return obj;
 		}catch(Exception e) {
 			System.err.println(e);
@@ -71,18 +68,21 @@ public class DBManager {
 	}
 	
 	
-	public List<Chat> queryChatStatement(String query){
-		List<Chat> result = null;
+	def List<Chat> queryChatStatement(String query){
+		val List<Chat> result = newArrayList();
 		try {
-			result = (List<Chat>)(Object) queryStatement(query);
+			 queryStatement(query).forEach[
+			 	if(it instanceof Chat)
+			 		result.add(it)
+			 ]
 		}
 		catch(Exception e) {
-			System.err.println("Can't cast Object to" + Chat.class);
+			System.err.println("Can't cast Object to" + Chat);
 		}
 		return result;
 	}
 	
-	public List<Chat> selectChatStatement(){
+	def List<Chat> selectChatStatement(){
 		return queryChatStatement("SELECT c FROM Chat c");
 	}
 

@@ -6,16 +6,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-public class PropertyReader {
-	public enum PropertyType { BOT_TOKEN, BOT_USERNAME}
+class PropertyReader {
+	enum PropertyType { BOT_TOKEN, BOT_USERNAME}
 	
 	Properties prop = null;
 	
-	public PropertyReader() {
+	new() {
 		prop =   new Properties();
 		
-		String fileName = System.getProperty("user.dir") + "\\src\\main\\resources\\config\\config.properties";
-		InputStream is = null;
+		val fileName = System.getProperty("user.dir") + "\\config.properties";
+		var InputStream is = null;
 		try {
 		    is = new FileInputStream(fileName);
 		    prop.load(is);
@@ -23,23 +23,23 @@ public class PropertyReader {
 		    throw new RuntimeException("Config file " + fileName + " doesn't exist");
 		}
 		catch (IOException ex) {
-			 throw new RuntimeException("Error while readin g" + fileName );
+			 throw new RuntimeException("Error while reading" + fileName );
 		}
 		
 	}
 	
-	public String getProperty(PropertyType property){
+	def String getProperty(PropertyType property){
 		return prop.getProperty(getPropertyValue(property));
 	}
 	
-	private String getPropertyValue(PropertyType property) {
+	private def String getPropertyValue(PropertyType property) {
 		switch(property) {
 			case BOT_TOKEN : 
-				return "bot_token";
+				return "bot_token"
 			case BOT_USERNAME : 
-				return "bot_username";
+				return "bot_username"
 			default : 
-				return null;
+				return null
 		}
 	}
 	

@@ -4,15 +4,12 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 
-public class JPAUtility {
- 	private static final EntityManagerFactory emFactory;
-	static {
-		   emFactory = Persistence.createEntityManagerFactory("TimeBot");
-	}
-	public static EntityManager getEntityManager(){
+class JPAUtility {
+ 	val static EntityManagerFactory emFactory=  Persistence.createEntityManagerFactory("TimeBot");
+	def static EntityManager getEntityManager(){
 		return emFactory.createEntityManager();
 	}
-	public static void close(){
+	def static void close(){
 		emFactory.close();
 	}
 } 

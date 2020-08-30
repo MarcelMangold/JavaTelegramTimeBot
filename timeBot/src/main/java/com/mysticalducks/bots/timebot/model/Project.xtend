@@ -16,7 +16,7 @@ import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name="project")
-public class Project implements Serializable {
+class Project implements Serializable {
 	private static final long serialVersionUID = 3L;
 
 	@Id
@@ -30,53 +30,53 @@ public class Project implements Serializable {
 	@Column(name = "notice", nullable = true)
 	private String notice;
 	
-	@ManyToOne(targetEntity = Chat.class, fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@ManyToOne(targetEntity = Chat, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "chat_id", referencedColumnName = "id")
     @NotNull
     private Chat chat;
 	
-	@ManyToOne(targetEntity = User.class, fetch=FetchType.EAGER, cascade={CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE})
+	@ManyToOne(targetEntity = User, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @NotNull
     private User user;
 
-	public int getID() {
+	def int getID() {
 		return id;
 	}
 
-	public void setID(int id) {
+	def void setID(int id) {
 		this.id = id;
 	}
 
-	public String getName() {
+	def String getName() {
 		return name;
 	}
 
-	public void setName(String name) {
+	def void setName(String name) {
 		this.name = name;
 	}
 
-	public String notice() {
+	def String notice() {
 		return notice;
 	}
 
-	public void setNotice(String notice) {
+	def void setNotice(String notice) {
 		this.notice = notice;
 	}
 	
-	public Chat getChat() {
+	def Chat getChat() {
 		return chat;
 	}
 	
-	public void setChat(Chat chat) {
+	def void setChat(Chat chat) {
 		this.chat = chat;
 	}
 	
-	public User getUser() {
+	def User getUser() {
 		return user;
 	}
 	
-	public void setUser(User user) {
+	def void setUser(User user) {
 		this.user = user;
 	}
 	
