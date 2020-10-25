@@ -20,6 +20,15 @@ import org.telegram.abilitybots.api.bot.AbilityBot
 import static org.telegram.abilitybots.api.objects.Locality.ALL;
 import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
 import com.mysticalducks.bots.timebot.model.User
+import com.mysticalducks.bots.timebot.util.KeyboardFactory
+import javax.validation.constraints.NotNull
+import java.util.function.Predicate
+import static org.telegram.abilitybots.api.objects.Flag.*
+import java.util.Date
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import org.telegram.abilitybots.api.objects.ReplyFlow
+import org.telegram.abilitybots.api.objects.Reply
 
 class Bot extends AbilityBot {
 	
@@ -27,7 +36,7 @@ class Bot extends AbilityBot {
 	
 	new(String token, String botUsername) {
 		super(token, botUsername)
-		dbManager = new DBManager();
+//		dbManager = new DBManager();
 	}
 
 	
@@ -71,30 +80,138 @@ class Bot extends AbilityBot {
 			.privacy(PUBLIC)  
         	.locality(ALL) 
 			.input(0)
+			.action[ ctx |
+				val projects = #["project1", "project2"]
+				sender.execute(new SendMessage()
+					.setText("Select one of your projects please:")
+                    .setChatId(ctx.chatId)
+                    .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
+			]
+			.reply (
+				[upd |
+					val project = upd.callbackQuery.data
+              			silent.send(
+						'''Project "«project»" selected and the time from now («new SimpleDateFormat("HH:ss (dd MMM)").format(Calendar.getInstance().getTime())»).
+						''', upd.callbackQuery.message.chat.id)
+            	],
+            	CALLBACK_QUERY,
+            	isProject
+            )
+			.build
+	}
+	
+	def Ability finish() {
+		return Ability.builder
+			.name("end")
+			.info("end time tracking")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
 			.action[ ctx | 
-				dbManager.existsUser(ctx.user.id)
-				silent.sendMd(
-				'''
-				Start timetracking...
-				'''
-				, ctx.chatId())
+				var sendMessage = "User not found"
+				if(true) { //dbManager.existsUser(ctx.user.id)
+					sendMessage =
+					'''
+					Finish timetracking...
+					You have worked from to. 
+					The sum is 
+					'''
+				}
+				silent.sendMd(sendMessage,  ctx.chatId())
 			].build
 	}
-
 	
-
-//	override String getBotUsername() {
-//		return botUsername;
-//	}
-//
-//	override String getBotToken() {
-//		return token;
-//	}
+	@NotNull
+    def Predicate<Update> hasMessageWith(String msg) {
+        return [upd | upd.getMessage().getText().equalsIgnoreCase(msg)];
+    }
 	
+	def ReplyFlow getWorkingHours() {
+		val saidLeft = Reply.of([upd | silent.send("Sir, I have gone left.", upd.message.chatId)],
+          hasMessageWith("go left or else"));
+
+        val leftflow = ReplyFlow.builder(db)
+          .action([upd |  silent.send("I don't know how to go left.", upd.message.chatId)])
+          .onlyIf(hasMessageWith("left"))
+          .next(saidLeft).build();
+
+//        val saidRight = Reply.of(upd -> silent.send("Sir, I have gone right.", getChatId(upd)),
+//          hasMessageWith("right"));
+
+        return ReplyFlow.builder(db)
+          .action[upd |  silent.send("Command me to go left or right!", upd.message.chatId)]
+          .onlyIf(hasMessageWith("/working_time"))
+          .next(leftflow)
+//          .next(saidRight)
+          .build();
+//		return Ability.builder
+//			.name("workingtime")
+//			.info("print working hours of a project")
+//			.privacy(PUBLIC)  
+//        	.locality(ALL) 
+//			.input(0)
+//			.action[ ctx |
+//				val projects = #["project1a", "project2a"]
+//				sender.execute(new SendMessage()
+//					.setText("Select one of your projects please:")
+//                    .setChatId(ctx.chatId)
+//                    .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
+//			]
+//			.reply (
+//				[upd |
+//					sender.execute(new SendMessage()
+//					.setText("Select one of the following time type please:")
+//                    .setChatId(upd.callbackQuery.message.chatId)
+//                    .setReplyMarkup(KeyboardFactory.timeKeyboard) )
+//            	],
+//            	CALLBACK_QUERY,
+//            	isProject
+//            ).reply (
+//				[upd |
+//					val times = upd.callbackQuery.data
+//              			silent.send(
+//						'''You have worked XX Hours 
+//						''', upd.callbackQuery.message.chat.id)
+//            	],
+//            	CALLBACK_QUERY,
+//            	isTime
+//            )
+//			.build
+	}
+
+		
 	override creatorId() {
 		return 123
 	}
 	
+	@NotNull
+    private def Predicate<Update> isProject() {
+        return [upd | 
+        		val project = upd.callbackQuery.data
+        		if(upd.callbackQuery.message.hasReplyMarkup){
+        			val projects = newArrayList
+        			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
+        			return projects.filter[it == project].size > 0
+        		}
+        		return false
+        ];
+    }
+    
+    
+    @NotNull
+    private def Predicate<Update> isTime() {
+        return [upd | 
+        		val time = upd.callbackQuery.data
+        		if(upd.callbackQuery.message.hasReplyMarkup){
+        			val times = newArrayList
+        			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[times.add(it.callbackData)]]
+        			println(times)
+        			return times.filter[it == time].size > 0
+        		}
+        		return false
+        ];
+    }
+    
 	
 	
 	

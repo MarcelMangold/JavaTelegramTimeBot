@@ -8,7 +8,7 @@ import com.mysticalducks.bots.timebot.bot.Bot;
 import com.mysticalducks.bots.timebot.util.PropertyReader;
 import com.mysticalducks.bots.timebot.util.PropertyReader.PropertyType;
 
-public class Main {
+class Main {
 
 
 	def static void main(String[] args) {

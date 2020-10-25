@@ -14,7 +14,7 @@ class PropertyReader {
 	new() {
 		prop =   new Properties();
 		
-		val fileName = System.getProperty("user.dir") + "\\config.properties";
+		val fileName = System.getProperty("user.dir") + "/config.properties";
 		var InputStream is = null;
 		try {
 		    is = new FileInputStream(fileName);
