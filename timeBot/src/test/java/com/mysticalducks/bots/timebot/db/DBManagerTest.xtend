@@ -3,19 +3,17 @@ package com.mysticalducks.bots.timebot.db;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-
-import com.mysticalducks.bots.timebot.model.Chat;
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.Order
+import com.mysticalducks.bots.timebot.model.Chat
 import com.mysticalducks.bots.timebot.model.User
+import org.junit.jupiter.api.TestMethodOrder
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 
 @TestMethodOrder(OrderAnnotation)
 class DBManagerTest {
 	
-	DBManager db = new DBManager();
+	val DBManager db = new DBManager;
 
 	@Test
 	@Order(1)
