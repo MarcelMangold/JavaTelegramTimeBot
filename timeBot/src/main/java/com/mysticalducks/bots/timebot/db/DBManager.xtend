@@ -58,6 +58,25 @@ class DBManager {
 		return null
 	}
 	
+	def List<Project> getProjects(int userId, long chatId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createQuery("SELECT p FROM Project p WHERE p.user = :userId AND p.chat = :chatId", Project)
+			query.setParameter("userId", new User(userId))
+			query.setParameter("chatId", new Chat(chatId))
+
+			val List<Project> resultList = query.getResultList();
+			return resultList
+			
+		} catch(Exception e) {
+			System.err.println("Error while reading project")
+			System.err.println(e);
+		}
+		return null
+	}
+	
+	
 	private def getUser(int userId) {
 		var user = findUser(userId)
 		if(user === null) {

@@ -161,6 +161,34 @@ class Bot extends AbilityBot {
 			].build
 	}
 	
+	def Ability showProject() {
+		return Ability.builder
+			.name("showprojects")
+			.info("show projects fo user")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx | 
+				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId)
+				
+				if(projects.size == 0) {
+					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
+				} else {
+					silent.send(
+						'''
+						Following projects exist:
+						«FOR project : projects»
+							- «project.name»
+						«ENDFOR»
+						''',  
+						ctx.chatId()
+					)
+				
+				}
+				
+			].build
+	}
+	
 	@NotNull
     def Predicate<Update> hasMessageWith(String msg) {
         return [upd | upd.getMessage().getText().equalsIgnoreCase(msg)];

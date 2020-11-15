@@ -63,16 +63,32 @@ class DBManagerTest {
 	@Test
 	@Order(7)
 	def void test_newProject() {
-		val dbUser = db.existsUser(-1)
-		val chat = db.existsChat(-1L)
-		val project = db.newProject(-1, -1, "testProject")
-		assertEquals(chat.ID, project.chat.ID)
-		assertEquals(dbUser.ID, project.user.ID)
-		assertEquals("testProject", project.name)
+		val chatId = -1L
+		val userId = -1
+		val dbUser = db.existsUser(userId)
+		val chat = db.existsChat(chatId)
+		val project1 = db.newProject(userId, chatId, "testProject")
+		assertEquals(chat.ID, project1.chat.ID)
+		assertEquals(dbUser.ID, project1.user.ID)
+		assertEquals("testProject", project1.name)
+	
+		val project2 = db.newProject(userId, chatId, "testProject2")
+		assertEquals(chat.ID, project2.chat.ID)
+		assertEquals(dbUser.ID, project2.user.ID)
+		assertEquals("testProject2", project2.name)
 		
-		db.deleteStatementById(Project, project.ID)
-		db.deleteStatementById(User, -1)
-		db.deleteStatementById(Chat, -1L)
+		val projects = db.getProjects(userId, chatId)
+		
+		assertEquals("testProject", projects.get(0).name)
+		assertEquals("testProject2", projects.get(1).name)
+		
+		db.deleteStatementById(Project, project1.ID)
+		db.deleteStatementById(Project, project2.ID)
+		
+		assertEquals(0, db.getProjects(userId, chatId).size)
+		
+		db.deleteStatementById(User, userId)
+		db.deleteStatementById(Chat, chatId)
 		
 	}
 	
