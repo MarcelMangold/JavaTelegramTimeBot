@@ -13,32 +13,47 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
+import javax.annotation.Nullable
+import org.eclipse.persistence.annotations.Cache
 
 @Entity
+@Cache(alwaysRefresh = true, disableHits = true)
 @Table(name="project")
 class Project implements Serializable {
-	private static final long serialVersionUID = 3L;
+	static final long serialVersionUID = 3L;
+	
+	new () {}
+	
+	new(User user, Chat chat, String name) {
+		this.user = user
+		this.chat = chat
+		this.name = name
+	}
+	
+	new(String name) {
+		this.name = name
+	}
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "id", unique = true)
-	private int id;
+	int id;
 
 	@Column(name = "name", nullable = false)
-	private String name;
+	@NotNull
+	String name;
 
 	@Column(name = "notice", nullable = true)
-	private String notice;
+	@Nullable
+	String notice;
 	
-	@ManyToOne(targetEntity = Chat, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
-    @JoinColumn(name = "chat_id", referencedColumnName = "id")
-    @NotNull
-    private Chat chat;
-	
-	@ManyToOne(targetEntity = User, fetch=FetchType.EAGER, cascade=#[CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REMOVE])
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @NotNull
-    private User user;
+    User user;
+	
+    @JoinColumn(name = "chat_id", referencedColumnName = "id")
+    @NotNull
+    Chat chat;
 
 	def int getID() {
 		return id;

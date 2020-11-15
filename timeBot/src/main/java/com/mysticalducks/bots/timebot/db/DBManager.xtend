@@ -4,17 +4,18 @@ import java.util.List;
 import com.mysticalducks.bots.timebot.model.Chat
 import com.mysticalducks.bots.timebot.model.User
 import javax.persistence.EntityManager
+import com.mysticalducks.bots.timebot.model.Project
+import javax.persistence.EntityNotFoundException
 
 class DBManager {
-	var EntityManager entityManager = null
 	new() {
 
 	}
 
 	def List<Object> queryStatement(String query) {
-		 entityManager = JPAUtility.getEntityManager();
 		
 		try {
+			val entityManager = JPAUtility.getEntityManager();
 			entityManager.getTransaction().begin();
 			val List<Object> list =  entityManager.createQuery(query).getResultList();
 			entityManager.close();
@@ -27,14 +28,14 @@ class DBManager {
 		return null;
 	}
 	
-	def boolean insertStatement(Object object) {
+	def Object insertStatement(Object object) {
 		try {
 			val entityManager = JPAUtility.getEntityManager();	
 			entityManager.getTransaction().begin();
 			entityManager.persist(object);
 			entityManager.getTransaction().commit();
 			entityManager.close();
-			return true
+			return object
 		}catch(Exception e) {
 			System.err.println(e);
 			println(e.getMessage());
@@ -43,27 +44,73 @@ class DBManager {
 	}
 	
 	/**
+	 * Return project or null if there is an error
+	 */
+	def Project newProject(int userId, int chatId, String name) {
+		try {
+			val chat = chatId.chat
+			val user = userId.user
+			val project = new Project(user,chat,name)
+			insertStatement(project)
+//			val entityManager = JPAUtility.getEntityManager();	
+//			entityManager.getTransaction().begin();
+//			entityManager.persist(project);
+//			entityManager.getTransaction().commit();
+//			entityManager.close();
+			return project
+		} catch(Exception e) {
+			System.err.println("Error while creating Project:")
+			System.err.println(e);
+		}
+		return null
+	}
+	
+	private def getUser(int userId) {
+		var user = findUser(userId)
+		if(user === null) {
+			user = insertStatement(new User(userId)) as User
+		}
+		return user
+	}
+	
+	private def getChat(int chatId) {
+		var chat = findChat(chatId) 
+		if(chat === null) {
+			chat = insertStatement(new Chat(chatId)) as Chat
+		}
+		return chat
+	}
+	/**
 	 * Check if user exists. <br>
 	 * If not add user to db
 	 * @return true if user exists if not return false and added user to db
 	 */
-	def boolean existsUser(int userId) {
-		var user = new User(userId)
-		if(findKeyValue(user, userId) !== null)
-			return true
-			
-		insertStatement(user)
-		return false
+	def User existsUser(int userId) {
+		var user = findUser(userId)
+		
+		if(user !== null)
+			return user
+		return insertStatement(new User(userId)) as User
 	}
 	
-	
-	def String deleteStatementById(Object object, int key) {
+	def Chat existsChat(int chatId) {
+		var chat = findChat(chatId)
+		
+		if(chat !== null)
+			return chat
+		return insertStatement(new Chat(chatId)) as Chat
+	}
+		
+		
+	def String deleteStatementById(Class clazz, int key) {
 		try {
 			val entityManager = JPAUtility.getEntityManager();	
-			val obj = entityManager.find(object.getClass(),key);
-			entityManager.getTransaction().begin();
-			entityManager.remove(obj);
-			entityManager.getTransaction().commit();
+			val obj = entityManager.find(clazz,key);
+			if(obj !== null) {
+				entityManager.getTransaction().begin();
+				entityManager.remove(obj);
+				entityManager.getTransaction().commit();
+			}
 			entityManager.close();
 		}catch(Exception e) {
 			System.err.println(e);
@@ -72,17 +119,32 @@ class DBManager {
 		return null;
 	}
 	
-	def Object findKeyValue(Object object, int key) {
+	def User findUser(int key) {
+		return findKeyValue(User, key) as User
+	}
+	
+	def Chat findChat(int key) {
+		return findKeyValue(Chat, key) as Chat
+	}
+	
+	def Object findKeyValue(Class clazz, int key) {
 		try {
 			val entityManager = JPAUtility.getEntityManager();	
-			val obj = entityManager.find(object.getClass(), key);
-			return obj;
-		}catch(Exception e) {
+			val claz = entityManager.getReference(clazz, key);
+			entityManager.close
+			return claz
+		}catch(EntityNotFoundException entNotFoundExc) {
+			return null
+		}
+		catch(Exception e) {
 			System.err.println(e);
 		}
 		return null;
 	}
 	
+	def Chat createChat(int chatId) {
+		return insertStatement(new Chat(chatId)) as Chat;
+	}
 	
 	def List<Chat> queryChatStatement(String query){
 		val List<Chat> result = newArrayList();

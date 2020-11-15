@@ -33,6 +33,9 @@ import org.telegram.abilitybots.api.objects.Reply
 class Bot extends AbilityBot {
 	
 	var DBManager dbManager = null
+	enum REPLY_MARKUP {
+		NEW_PROJECT
+	}
 	
 	new(String token, String botUsername) {
 		super(token, botUsername)
@@ -73,6 +76,35 @@ class Bot extends AbilityBot {
 			].build
 	}
 	
+	def Ability newProject() {
+		return Ability.builder
+			.name("newproject")
+			.info("add new time project")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx |
+				val user = dbManager.existsUser(ctx.user.id)
+						
+			
+				sender.execute(new SendMessage()
+				.setText("Please enter the name of your project")
+                .setChatId(ctx.chatId))
+			]
+			.reply (
+				[upd |
+					val project = upd.callbackQuery.data
+					
+          			silent.send(
+					'''Project "«project»" were added to your project list.
+					''', upd.callbackQuery.message.chat.id)
+            	],
+            	CALLBACK_QUERY,
+            	isProject
+            )
+			.build
+	}
+	
 	def Ability start() {
 		return Ability.builder
 			.name("start")
@@ -81,11 +113,12 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx |
+				val user = dbManager.existsUser(ctx.user.id)
 				val projects = #["project1", "project2"]
 				sender.execute(new SendMessage()
-					.setText("Select one of your projects please:")
-                    .setChatId(ctx.chatId)
-                    .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
+				.setText("Select one of your projects please:")
+                .setChatId(ctx.chatId)
+                .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
 			]
 			.reply (
 				[upd |
@@ -108,15 +141,13 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx | 
-				var sendMessage = "User not found"
-				if(true) { //dbManager.existsUser(ctx.user.id)
-					sendMessage =
-					'''
-					Finish timetracking...
-					You have worked from to. 
-					The sum is 
-					'''
-				}
+				val user = dbManager.existsUser(ctx.user.id)
+				val sendMessage =
+				'''
+				Finish timetracking...
+				You have worked from to. 
+				The sum is 
+				'''
 				silent.sendMd(sendMessage,  ctx.chatId())
 			].build
 	}
