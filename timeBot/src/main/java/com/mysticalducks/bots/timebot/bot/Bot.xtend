@@ -33,13 +33,14 @@ import org.telegram.abilitybots.api.objects.Reply
 class Bot extends AbilityBot {
 	
 	var DBManager dbManager = null
+	var REPLY_MARKUP replyState = null
 	enum REPLY_MARKUP {
 		NEW_PROJECT
 	}
 	
 	new(String token, String botUsername) {
 		super(token, botUsername)
-//		dbManager = new DBManager();
+		dbManager = new DBManager();
 	}
 
 	
@@ -84,23 +85,30 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx |
-				val user = dbManager.existsUser(ctx.user.id)
-						
-			
+				replyState = REPLY_MARKUP.NEW_PROJECT
 				sender.execute(new SendMessage()
-				.setText("Please enter the name of your project")
-                .setChatId(ctx.chatId))
+					.setText("Please enter the name of your project")
+		            .setChatId(ctx.chatId)
+                )
 			]
 			.reply (
 				[upd |
-					val project = upd.callbackQuery.data
-					
-          			silent.send(
-					'''Project "«project»" were added to your project list.
-					''', upd.callbackQuery.message.chat.id)
+					replyState = null
+					val projectName = upd.message.text
+					val project = dbManager.newProject(upd.message.from.id, upd.message.chatId, projectName)
+					if(project === null) {
+						silent.send(
+						'''The project "«project»" cannot be created.
+						''', upd.message.chat.id)
+					} else {
+						silent.send(
+					'''Project "«project.name»" were added to your project list.
+					''', upd.message.chat.id)
+					}
+          			
             	],
-            	CALLBACK_QUERY,
-            	isProject
+            	MESSAGE,
+            	isNewProject
             )
 			.build
 	}
@@ -116,9 +124,10 @@ class Bot extends AbilityBot {
 				val user = dbManager.existsUser(ctx.user.id)
 				val projects = #["project1", "project2"]
 				sender.execute(new SendMessage()
-				.setText("Select one of your projects please:")
-                .setChatId(ctx.chatId)
-                .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
+					.setText("Select one of your projects please:")
+	                .setChatId(ctx.chatId)
+	                .setReplyMarkup(KeyboardFactory.getKeyboard(projects))
+	            )
 			]
 			.reply (
 				[upd |
@@ -215,16 +224,22 @@ class Bot extends AbilityBot {
 		return 123
 	}
 	
+	private def Predicate<Update> isNewProject() {
+    	return [upd | 
+	      	return replyState == REPLY_MARKUP.NEW_PROJECT
+    	];
+  	}
+	
 	@NotNull
     private def Predicate<Update> isProject() {
         return [upd | 
-        		val project = upd.callbackQuery.data
-        		if(upd.callbackQuery.message.hasReplyMarkup){
-        			val projects = newArrayList
-        			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
-        			return projects.filter[it == project].size > 0
-        		}
-        		return false
+    		val project = upd.callbackQuery.data
+    		if(upd.callbackQuery.message.hasReplyMarkup){
+    			val projects = newArrayList
+    			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
+    			return projects.filter[it == project].size > 0
+    		}
+    		return false
         ];
     }
     

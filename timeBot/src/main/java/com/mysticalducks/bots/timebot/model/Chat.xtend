@@ -17,19 +17,19 @@ class Chat implements Serializable {
 	@Id
 	@Column(name = "id", unique = true)
 	@OneToMany(fetch = FetchType.LAZY, mappedBy = "chat")
-	int id;
+	long id;
 	
 	new(){}
 	
-	new (int id) {
+	new (long id) {
 		this.id = id;
 	}
 
-	def int getID() {
+	def long getID() {
 		return id;
 	}
 
-	def void setID(int id) {
+	def void setID(long id) {
 		this.id = id;
 	}
 

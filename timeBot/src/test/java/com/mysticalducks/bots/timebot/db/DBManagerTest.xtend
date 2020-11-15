@@ -37,7 +37,7 @@ class DBManagerTest {
 	@Test
 	@Order(2)
 	def void test_insertStatement() {
-		assertEquals(-1,db.createChat(-1).ID);
+		assertEquals(-1,db.createChat(-1L).ID);
 	}
 	
 	@Test
@@ -50,13 +50,13 @@ class DBManagerTest {
 	@Test
 	@Order(5)
 	def void test_findStatement() {
-		assertEquals(-1, db.findChat(-1).ID);
+		assertEquals(-1, db.findChat(-1L).ID);
 	}
 	
 	@Test
 	@Order(6)
 	def void test_deleteStatement() {
-		val result = db.deleteStatementById(Chat, -1);
+		val result = db.deleteStatementById(Chat, -1L);
 		assertEquals(null, result);
 	}
 	
@@ -64,7 +64,7 @@ class DBManagerTest {
 	@Order(7)
 	def void test_newProject() {
 		val dbUser = db.existsUser(-1)
-		val chat = db.existsChat(-1)
+		val chat = db.existsChat(-1L)
 		val project = db.newProject(-1, -1, "testProject")
 		assertEquals(chat.ID, project.chat.ID)
 		assertEquals(dbUser.ID, project.user.ID)
@@ -72,7 +72,7 @@ class DBManagerTest {
 		
 		db.deleteStatementById(Project, project.ID)
 		db.deleteStatementById(User, -1)
-		db.deleteStatementById(Chat, -1)
+		db.deleteStatementById(Chat, -1L)
 		
 	}
 	

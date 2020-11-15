@@ -46,18 +46,11 @@ class DBManager {
 	/**
 	 * Return project or null if there is an error
 	 */
-	def Project newProject(int userId, int chatId, String name) {
+	def Project newProject(int userId, long chatId, String name) {
 		try {
 			val chat = chatId.chat
 			val user = userId.user
-			val project = new Project(user,chat,name)
-			insertStatement(project)
-//			val entityManager = JPAUtility.getEntityManager();	
-//			entityManager.getTransaction().begin();
-//			entityManager.persist(project);
-//			entityManager.getTransaction().commit();
-//			entityManager.close();
-			return project
+			return insertStatement(new Project(user,chat,name)) as Project
 		} catch(Exception e) {
 			System.err.println("Error while creating Project:")
 			System.err.println(e);
@@ -73,7 +66,7 @@ class DBManager {
 		return user
 	}
 	
-	private def getChat(int chatId) {
+	private def getChat(long chatId) {
 		var chat = findChat(chatId) 
 		if(chat === null) {
 			chat = insertStatement(new Chat(chatId)) as Chat
@@ -93,7 +86,7 @@ class DBManager {
 		return insertStatement(new User(userId)) as User
 	}
 	
-	def Chat existsChat(int chatId) {
+	def Chat existsChat(long chatId) {
 		var chat = findChat(chatId)
 		
 		if(chat !== null)
@@ -119,12 +112,44 @@ class DBManager {
 		return null;
 	}
 	
+	def String deleteStatementById(Class clazz, long key) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();	
+			val obj = entityManager.find(clazz,key);
+			if(obj !== null) {
+				entityManager.getTransaction().begin();
+				entityManager.remove(obj);
+				entityManager.getTransaction().commit();
+			}
+			entityManager.close();
+		}catch(Exception e) {
+			System.err.println(e);
+			return e.getMessage();
+		}
+		return null;
+	}
+	
 	def User findUser(int key) {
 		return findKeyValue(User, key) as User
 	}
 	
-	def Chat findChat(int key) {
+	def Chat findChat(long key) {
 		return findKeyValue(Chat, key) as Chat
+	}
+	
+	def Object findKeyValue(Class clazz, long key) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();	
+			val claz = entityManager.getReference(clazz, key);
+			entityManager.close
+			return claz
+		}catch(EntityNotFoundException entNotFoundExc) {
+			return null
+		}
+		catch(Exception e) {
+			System.err.println(e);
+		}
+		return null;
 	}
 	
 	def Object findKeyValue(Class clazz, int key) {
@@ -142,7 +167,7 @@ class DBManager {
 		return null;
 	}
 	
-	def Chat createChat(int chatId) {
+	def Chat createChat(long chatId) {
 		return insertStatement(new Chat(chatId)) as Chat;
 	}
 	
