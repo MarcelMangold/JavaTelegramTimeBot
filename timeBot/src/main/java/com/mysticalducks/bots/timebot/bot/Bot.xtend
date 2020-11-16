@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import org.telegram.abilitybots.api.objects.ReplyFlow
 import org.telegram.abilitybots.api.objects.Reply
+import java.util.stream.Collectors
 
 class Bot extends AbilityBot {
 	
@@ -95,7 +96,15 @@ class Bot extends AbilityBot {
 				[upd |
 					replyState = null
 					val projectName = upd.message.text
-					val project = dbManager.newProject(upd.message.from.id, upd.message.chatId, projectName)
+					val userId = upd.message.from.id
+					val chatId = upd.message.chatId
+					if(dbManager.existsProject(userId, chatId, projectName)) {
+						silent.send(
+						'''The project "«projectName»" already exists. Please delete or rename or change the name of the project.
+						''', upd.message.chat.id)
+						return
+					}
+					val project = dbManager.newProject(userId, chatId, projectName)
 					if(project === null) {
 						silent.send(
 						'''The project "«project»" cannot be created.
@@ -121,8 +130,11 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx |
-				val user = dbManager.existsUser(ctx.user.id)
-				val projects = #["project1", "project2"]
+				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId).stream().map[it.name].collect(Collectors.toList)
+				if(projects == 0) {
+					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
+					return
+				}
 				sender.execute(new SendMessage()
 					.setText("Select one of your projects please:")
 	                .setChatId(ctx.chatId)
@@ -183,7 +195,6 @@ class Bot extends AbilityBot {
 						''',  
 						ctx.chatId()
 					)
-				
 				}
 				
 			].build

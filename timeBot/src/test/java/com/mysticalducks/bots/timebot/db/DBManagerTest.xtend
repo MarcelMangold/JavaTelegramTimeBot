@@ -67,6 +67,9 @@ class DBManagerTest {
 		val userId = -1
 		val dbUser = db.existsUser(userId)
 		val chat = db.existsChat(chatId)
+		
+		assertEquals(false, db.existsProject(userId, chatId, "testProject"))
+		
 		val project1 = db.newProject(userId, chatId, "testProject")
 		assertEquals(chat.ID, project1.chat.ID)
 		assertEquals(dbUser.ID, project1.user.ID)
@@ -81,6 +84,8 @@ class DBManagerTest {
 		
 		assertEquals("testProject", projects.get(0).name)
 		assertEquals("testProject2", projects.get(1).name)
+		
+		assertEquals(true, db.existsProject(userId, chatId, "testProject"))
 		
 		db.deleteStatementById(Project, project1.ID)
 		db.deleteStatementById(Project, project2.ID)
