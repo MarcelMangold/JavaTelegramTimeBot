@@ -6,6 +6,9 @@ import com.mysticalducks.bots.timebot.model.User
 import javax.persistence.EntityManager
 import com.mysticalducks.bots.timebot.model.Project
 import javax.persistence.EntityNotFoundException
+import javax.persistence.TypedQuery
+import javax.persistence.Query
+import com.mysticalducks.bots.timebot.model.Timetracker
 
 class DBManager {
 	new() {
@@ -28,11 +31,42 @@ class DBManager {
 		return null;
 	}
 	
+	def Boolean queryDeleteStatement(String query) {
+		
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			entityManager.getTransaction().begin();
+			entityManager.createQuery(query).executeUpdate
+			entityManager.close();
+			return true;
+		}catch(Exception e) {
+			System.out.println(e);
+			System.err.println("error while reading the following sql statement: " + query);
+		}
+		
+		return false;
+	}
+	
 	def Object insertStatement(Object object) {
 		try {
 			val entityManager = JPAUtility.getEntityManager();	
 			entityManager.getTransaction().begin();
 			entityManager.persist(object);
+			entityManager.getTransaction().commit();
+			entityManager.close();
+			return object
+		}catch(Exception e) {
+			System.err.println(e);
+			println(e.getMessage());
+			return false
+		}
+	}
+	
+	def Object updateStatement(Object object) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();	
+			entityManager.getTransaction().begin();
+			entityManager.merge(object);
 			entityManager.getTransaction().commit();
 			entityManager.close();
 			return object
@@ -68,6 +102,7 @@ class DBManager {
 			query.setParameter("name", name)
 
 			val List<Project> resultList = query.getResultList();
+			entityManager.close();
 			return resultList.size > 0
 			
 		} catch(Exception e) {
@@ -76,6 +111,54 @@ class DBManager {
 		}
 		return null
 		
+	}
+	
+	def Boolean deleteAllProjects(int userId, long chatId) {
+		val entityManager = JPAUtility.getEntityManager();
+		val query = entityManager.createQuery("DELETE FROM Project p WHERE p.user = :user AND p.chat = :chat", Project)
+		query.setParameter("user", new User(userId))
+		query.setParameter("chat", new Chat(chatId))
+		return entityManager.executeQuery(query)
+	}
+	
+	def Boolean deleteAllTimetrackingEntries(int userId, long chatId) {
+		val entityManager = JPAUtility.getEntityManager();
+		val query = entityManager.createQuery("DELETE FROM Timetracker t WHERE t.user = :user AND t.chat = :chat", Timetracker)
+		query.setParameter("user", new User(userId))
+		query.setParameter("chat", new Chat(chatId))
+		return entityManager.executeQuery(query)
+	}
+	
+	def Boolean deleteChat(long chatId) {
+		val entityManager = JPAUtility.getEntityManager();
+		val query = entityManager.createQuery("DELETE FROM Chat c WHERE c.id = :chatId", Chat)
+		query.setParameter("chatId", chatId)
+		return entityManager.executeQuery(query)
+	}
+	
+	def Boolean deleteUser(int userId) {
+		val entityManager = JPAUtility.getEntityManager();
+		val query = entityManager.createQuery("DELETE FROM User u WHERE u.id = :userId", User)
+		query.setParameter("userId", userId)
+		return entityManager.executeQuery(query)
+	}
+	
+	
+	def Boolean executeQuery(EntityManager entityManager, Query query) {
+		try {
+			
+			entityManager.transaction.begin
+			query.executeUpdate();
+
+			entityManager.transaction.commit
+			entityManager.close();
+			return true
+			
+		} catch(Exception e) {
+			System.err.println("Error while executing query: " + query )
+			System.err.println(e);
+		}
+		return false
 	}
 	
 	def List<Project> getProjects(int userId, long chatId) {
@@ -96,6 +179,38 @@ class DBManager {
 		return null
 	}
 	
+	def Timetracker startTimetracking(int projectId, long chatId, int userId) {
+		try {
+			val chat = chatId.chat
+			val user = userId.user
+			val project = projectId.getProject
+			if(project === null) 
+				return null
+				
+			return insertStatement(new Timetracker(project, chat, user)) as Timetracker
+		} catch(Exception e) {
+			System.err.println("Error while creating timetracking object")
+			System.err.println(e);
+		}
+		return null
+	}
+	
+	def Timetracker endTimetracking(int timetrackerId) {
+		try {
+
+			val timetracker = timetrackerId.timeTracker
+			if(timetracker === null) 
+				return null
+				
+			timetracker.setEndTime
+			return updateStatement(timetracker) as Timetracker
+		} catch(Exception e) {
+			System.err.println("Error while creating timetracking object")
+			System.err.println(e);
+		}
+		return null
+	}
+	
 	
 	private def getUser(int userId) {
 		var user = findUser(userId)
@@ -103,6 +218,14 @@ class DBManager {
 			user = insertStatement(new User(userId)) as User
 		}
 		return user
+	}
+	
+	private def Project getProject(int projectId) {
+		return findProject(projectId)
+	}
+	
+	private def Timetracker getTimeTracker(int timetrackerId) {
+		return findTimetracker(timetrackerId)
 	}
 	
 	private def getChat(long chatId) {
@@ -170,6 +293,14 @@ class DBManager {
 	
 	def User findUser(int key) {
 		return findKeyValue(User, key) as User
+	}
+	
+	def Timetracker findTimetracker(int key) {
+		return findKeyValue(Timetracker, key) as Timetracker
+	}
+	
+	def Project findProject(int key) {
+		return findKeyValue(Project, key) as Project
 	}
 	
 	def Chat findChat(long key) {

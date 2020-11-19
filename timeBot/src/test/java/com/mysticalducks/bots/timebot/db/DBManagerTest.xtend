@@ -7,64 +7,61 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.Order
 import com.mysticalducks.bots.timebot.model.Chat
 import com.mysticalducks.bots.timebot.model.User
-import org.junit.jupiter.api.TestMethodOrder
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation
 import com.mysticalducks.bots.timebot.model.Project
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterAll
+import java.util.Date
+import java.util.concurrent.TimeUnit
 
-@TestMethodOrder(OrderAnnotation)
 class DBManagerTest {
 	
 	val DBManager db = new DBManager;
+	
+	val int userId = -1
+	val long chatId = -1L
 
+	@BeforeEach
+	def void cleanData() {
+		clearTestData
+	}
 	
 	@Test
-	@Order(1)
 	def void test_insertAndDeleteUser() {
-		val int userId = -1
-		val user = new User(userId)
-		
 		assertEquals(null, db.findUser(userId))
 		val dbUser = db.existsUser(userId)
 		//user doesn't exist
 		assertEquals(userId, dbUser.ID)
 		//user exists
 		assertEquals(userId, dbUser.ID)
-		
-		db.deleteStatementById(User, userId)
 	}
 	
 	
 	@Test
-	@Order(2)
 	def void test_insertStatement() {
-		assertEquals(-1,db.createChat(-1L).ID);
+		assertEquals(chatId,db.createChat(chatId).ID);
 	}
 	
 	@Test
-	@Order(3)
 	def void test_selectChatStatement() {
 		val List<Chat> list = db.selectChatStatement();
 		assertTrue(list.size() > 0);
 	}
 	
 	@Test
-	@Order(5)
 	def void test_findStatement() {
-		assertEquals(-1, db.findChat(-1L).ID);
+		db.createChat(chatId).ID
+		assertEquals(chatId, db.findChat(chatId).ID);
 	}
 	
 	@Test
-	@Order(6)
 	def void test_deleteStatement() {
-		val result = db.deleteStatementById(Chat, -1L);
+		db.createChat(chatId).ID
+		val result = db.deleteStatementById(Chat, chatId);
 		assertEquals(null, result);
 	}
 	
 	@Test
-	@Order(7)
 	def void test_newProject() {
-		val chatId = -1L
-		val userId = -1
 		val dbUser = db.existsUser(userId)
 		val chat = db.existsChat(chatId)
 		
@@ -92,12 +89,37 @@ class DBManagerTest {
 		
 		assertEquals(0, db.getProjects(userId, chatId).size)
 		
-		db.deleteStatementById(User, userId)
-		db.deleteStatementById(Chat, chatId)
-		
 	}
 	
-
+	@Test
+	def void test_timetracker() {
+		db.existsUser(userId)
+		db.existsChat(chatId)
+		val project = db.newProject(userId, chatId, "testProject")
+		var timetracker = db.startTimetracking(project.ID, chatId, userId)
+		
+		assertEquals(userId, timetracker.user.ID)
+		assertEquals(chatId, timetracker.chat.ID)
+		assertEquals(project.ID, timetracker.project.ID)
+		assertEquals(null, timetracker.endTime)
+		val now = new Date
+		assertTrue(now.time - timetracker.startTime.time < 100)
+		
+		TimeUnit.MILLISECONDS.sleep(500);
+		timetracker = db.endTimetracking(timetracker.ID)
+		assertTrue(timetracker.endTime.time - now.time < 600)
+	}
 	
-
+	
+	
+	//-----------------------------------------------------------------------------------
+	//							HELPER
+	//------------------------------------------------------------------------------------
+	
+	def void clearTestData() {
+		db.deleteAllTimetrackingEntries(userId, chatId)
+		db.deleteAllProjects(userId, chatId)
+		db.deleteChat(chatId)
+		db.deleteUser(userId)
+	}
 }
