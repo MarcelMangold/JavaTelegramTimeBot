@@ -30,6 +30,13 @@ import java.util.Calendar
 import org.telegram.abilitybots.api.objects.ReplyFlow
 import org.telegram.abilitybots.api.objects.Reply
 import java.util.stream.Collectors
+import java.util.TimeZone
+import java.time.ZoneId
+import org.joda.time.Interval
+import org.joda.time.DateTime
+import org.joda.time.Minutes
+import org.joda.time.Duration
+import org.joda.time.Period
 
 class Bot extends AbilityBot {
 	
@@ -143,10 +150,26 @@ class Bot extends AbilityBot {
 			]
 			.reply (
 				[upd |
-					val project = upd.callbackQuery.data
-              			silent.send(
-						'''Project "«project»" selected and the time from now («new SimpleDateFormat("HH:ss (dd MMM)").format(Calendar.getInstance().getTime())»).
-						''', upd.callbackQuery.message.chat.id)
+						val projectName = upd.callbackQuery.data
+						val userId = upd.callbackQuery.from.id
+						val chatId = upd.callbackQuery.message.chatId
+						val project = dbManager.getProjectByName(projectName, userId, chatId)
+						var String message = null
+						if(project === null) {
+							message = "Error while reading project name"
+						} else {
+							val timetracker = dbManager.startTimetracking(project.ID, chatId, userId)
+						
+							if(timetracker === null) {
+								message = "Error while starting timetracking"
+							}
+							else {
+								TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
+								message =
+								'''Project "«project.name»" selected and the time tracking startet at: «timetracker.startTime»'''	
+							}
+						}
+              			silent.send(message, upd.callbackQuery.message.chat.id)
             	],
             	CALLBACK_QUERY,
             	isProject
@@ -162,14 +185,31 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx | 
-				val user = dbManager.existsUser(ctx.user.id)
-				val sendMessage =
-				'''
-				Finish timetracking...
-				You have worked from to. 
-				The sum is 
-				'''
-				silent.sendMd(sendMessage,  ctx.chatId())
+				val userId = ctx.user.id
+				val chatId = ctx.chatId
+				var String message =  null
+				dbManager.existsUser(ctx.user.id)
+				
+				var timetracker = dbManager.openTimetracker(userId, chatId)
+				if(timetracker === null) {
+					message = 
+					'''
+					Currently no timetracker is active. 
+					Please start the timetracking with /start.
+					'''
+				} else {
+					timetracker = dbManager.endTimetracking(timetracker.ID)
+					TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
+					val p = new Period(new DateTime(timetracker.startTime),new DateTime(timetracker.endTime));
+					message =
+					'''
+					Finish timetracking...
+					You have worked from «timetracker.startTime» to «timetracker.endTime».
+					The total time are «p.hours» hours and «p.minutes» minutes .
+					'''
+				}
+				
+				silent.sendMd(message,  ctx.chatId())
 			].build
 	}
 	
@@ -290,7 +330,6 @@ class Bot extends AbilityBot {
         		if(upd.callbackQuery.message.hasReplyMarkup){
         			val times = newArrayList
         			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[times.add(it.callbackData)]]
-        			println(times)
         			return times.filter[it == time].size > 0
         		}
         		return false

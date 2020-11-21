@@ -76,6 +76,8 @@ class DBManagerTest {
 		assertEquals(chat.ID, project2.chat.ID)
 		assertEquals(dbUser.ID, project2.user.ID)
 		assertEquals("testProject2", project2.name)
+		assertEquals(project2.ID, db.getProjectByName("testProject2", userId, chatId).ID)
+		
 		
 		val projects = db.getProjects(userId, chatId)
 		
@@ -105,9 +107,17 @@ class DBManagerTest {
 		val now = new Date
 		assertTrue(now.time - timetracker.startTime.time < 100)
 		
+		val openTimetracker = db.openTimetracker(userId, chatId)
+		assertEquals(null, openTimetracker.endTime)
+		assertEquals(chatId, openTimetracker.chat.ID)
+		assertEquals(userId, openTimetracker.user.ID)
+		assertEquals(timetracker.ID, openTimetracker.ID)
+		assertEquals(project.ID, openTimetracker.project.ID)
+		
 		TimeUnit.MILLISECONDS.sleep(500);
 		timetracker = db.endTimetracking(timetracker.ID)
 		assertTrue(timetracker.endTime.time - now.time < 600)
+		
 	}
 	
 	

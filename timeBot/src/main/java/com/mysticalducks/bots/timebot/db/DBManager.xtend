@@ -195,6 +195,22 @@ class DBManager {
 		return null
 	}
 	
+	
+	def openTimetracker(int userId, long chatId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createQuery("SELECT t FROM Timetracker t WHERE t.user = :userId AND t.chat = :chatId and t.endTime IS NULL", Timetracker)
+			query.setParameter("userId", new User(userId))
+			query.setParameter("chatId", new Chat(chatId))
+			return query.singleResult as Timetracker
+		} catch(Exception e) {
+			System.err.println("Error while open timetracker object")
+			System.err.println(e);
+		}
+		return null
+	}
+	
 	def Timetracker endTimetracking(int timetrackerId) {
 		try {
 
@@ -211,6 +227,23 @@ class DBManager {
 		return null
 	}
 	
+	def Project getProjectByName(String name, int userId, Long chatId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createQuery("SELECT p FROM Project p WHERE p.user = :userId AND p.chat = :chatId and p.name = :name", Project)
+			query.setParameter("userId", new User(userId))
+			query.setParameter("chatId", new Chat(chatId))
+			query.setParameter("name", name)
+			return query.singleResult as Project
+			
+		} catch(Exception e) {
+			System.err.println("Error while reading project by name")
+			System.err.println(e);
+		} 
+		return null
+		
+	}
 	
 	private def getUser(int userId) {
 		var user = findUser(userId)
