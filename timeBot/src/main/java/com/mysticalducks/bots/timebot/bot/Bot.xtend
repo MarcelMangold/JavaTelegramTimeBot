@@ -156,20 +156,31 @@ class Bot extends AbilityBot {
 						val project = dbManager.getProjectByName(projectName, userId, chatId)
 						var String message = null
 						if(project === null) {
-							message = "Error while reading project name"
-						} else {
-							val timetracker = dbManager.startTimetracking(project.ID, chatId, userId)
-						
-							if(timetracker === null) {
-								message = "Error while starting timetracking"
-							}
-							else {
-								TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
-								message =
-								'''Project "«project.name»" selected and the time tracking startet at: «timetracker.startTime»'''	
-							}
+							silent.send("Error while reading project name", upd.callbackQuery.message.chat.id)
+							return 
 						}
-              			silent.send(message, upd.callbackQuery.message.chat.id)
+						var timetracker = dbManager.openTimetracker(userId, chatId)
+						if(timetracker !== null) {
+							silent.send(
+								'''
+								It is not possible to have two projects active at the same time.
+								Please finish the other project with /end before starting the new one.
+								Currently the project ""«timetracker.project.name»"" is active.
+								''', upd.callbackQuery.message.chat.id
+							)
+							return
+						}
+						
+						timetracker = dbManager.startTimetracking(project.ID, chatId, userId)
+						if(timetracker === null) {
+							silent.send("Error while starting timetracking", upd.callbackQuery.message.chat.id)
+							return
+						}
+						
+						TimeZone.setDefault(TimeZone.getTimeZone("Europe/Berlin"))
+						message =
+						'''Project "«project.name»" selected and the time tracking startet at: «timetracker.startTime»'''	
+          				silent.send(message, upd.callbackQuery.message.chat.id)
             	],
             	CALLBACK_QUERY,
             	isProject
