@@ -4,7 +4,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard
 import java.util.List
-import java.util.ArrayList
+import java.util.HashMap
+import java.util.Map
 
 class KeyboardFactory {
 	
@@ -20,6 +21,21 @@ class KeyboardFactory {
         	 rowInline.add(new InlineKeyboardButton().setText(item).setCallbackData(item))
         }
         rowsInline.add(rowInline);
+        inlineKeyboard.setKeyboard(rowsInline);
+        return inlineKeyboard;
+    }
+    
+    
+    def static ReplyKeyboard getKeyboard(HashMap<String, String> items) {
+        val InlineKeyboardMarkup inlineKeyboard = new InlineKeyboardMarkup();
+        val List<List<InlineKeyboardButton>> rowsInline = newArrayList
+        val List<InlineKeyboardButton> rowInline = newArrayList;
+        
+       	for (Map.Entry<String, String> entry : items.entrySet()) {
+    		 rowInline.add(new InlineKeyboardButton().setText(entry.key).setCallbackData(entry.value))
+    		  rowsInline.add(rowInline);
+		}
+       
         inlineKeyboard.setKeyboard(rowsInline);
         return inlineKeyboard;
     }

@@ -37,6 +37,7 @@ import org.joda.time.DateTime
 import org.joda.time.Minutes
 import org.joda.time.Duration
 import org.joda.time.Period
+import java.util.HashMap
 
 class Bot extends AbilityBot {
 	
@@ -138,6 +139,11 @@ class Bot extends AbilityBot {
 			.input(0)
 			.action[ ctx |
 				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId).stream().map[it.name].collect(Collectors.toList)
+				val HashMap<String, String> map = new HashMap
+				for(project : projects) {
+					map.put(project, '''newProject,«project»''')
+				}
+				
 				if(projects == 0) {
 					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
 					return
@@ -145,12 +151,12 @@ class Bot extends AbilityBot {
 				sender.execute(new SendMessage()
 					.setText("Select one of your projects please:")
 	                .setChatId(ctx.chatId)
-	                .setReplyMarkup(KeyboardFactory.getKeyboard(projects))
+	                .setReplyMarkup(KeyboardFactory.getKeyboard(map))
 	            )
 			]
 			.reply (
 				[upd |
-						val projectName = upd.callbackQuery.data
+						val projectName = upd.callbackQuery.data.split(",").get(1)
 						val userId = upd.callbackQuery.from.id
 						val chatId = upd.callbackQuery.message.chatId
 						val project = dbManager.getProjectByName(projectName, userId, chatId)
@@ -256,57 +262,123 @@ class Bot extends AbilityBot {
         return [upd | upd.getMessage().getText().equalsIgnoreCase(msg)];
     }
 	
-	def ReplyFlow getWorkingHours() {
-		val saidLeft = Reply.of([upd | silent.send("Sir, I have gone left.", upd.message.chatId)],
-          hasMessageWith("go left or else"));
-
-        val leftflow = ReplyFlow.builder(db)
-          .action([upd |  silent.send("I don't know how to go left.", upd.message.chatId)])
-          .onlyIf(hasMessageWith("left"))
-          .next(saidLeft).build();
-
-//        val saidRight = Reply.of(upd -> silent.send("Sir, I have gone right.", getChatId(upd)),
-//          hasMessageWith("right"));
-
-        return ReplyFlow.builder(db)
-          .action[upd |  silent.send("Command me to go left or right!", upd.message.chatId)]
-          .onlyIf(hasMessageWith("/working_time"))
-          .next(leftflow)
-//          .next(saidRight)
-          .build();
-//		return Ability.builder
-//			.name("workingtime")
-//			.info("print working hours of a project")
-//			.privacy(PUBLIC)  
-//        	.locality(ALL) 
-//			.input(0)
-//			.action[ ctx |
-//				val projects = #["project1a", "project2a"]
-//				sender.execute(new SendMessage()
-//					.setText("Select one of your projects please:")
-//                    .setChatId(ctx.chatId)
-//                    .setReplyMarkup(KeyboardFactory.getKeyboard(projects)) )
-//			]
-//			.reply (
-//				[upd |
-//					sender.execute(new SendMessage()
-//					.setText("Select one of the following time type please:")
-//                    .setChatId(upd.callbackQuery.message.chatId)
-//                    .setReplyMarkup(KeyboardFactory.timeKeyboard) )
-//            	],
-//            	CALLBACK_QUERY,
-//            	isProject
-//            ).reply (
-//				[upd |
-//					val times = upd.callbackQuery.data
-//              			silent.send(
-//						'''You have worked XX Hours 
-//						''', upd.callbackQuery.message.chat.id)
-//            	],
-//            	CALLBACK_QUERY,
-//            	isTime
-//            )
-//			.build
+	def Ability getWorkingTime() {
+		return Ability.builder
+			.name("workingtime")
+			.info("get working hours")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx |
+				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId)
+				val HashMap<String, String> map = new HashMap
+				for(project : projects) {
+					map.put(project.name, '''workingTime,«project.name»''')
+				}
+				if(projects == 0) {
+					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
+					return
+				}
+				sender.execute(new SendMessage()
+					.setText("Select one of your projects please:")
+	                .setChatId(ctx.chatId)
+	                .setReplyMarkup(KeyboardFactory.getKeyboard(map))
+	            )
+			]
+			.reply (
+				[upd |
+						val projectName = upd.callbackQuery.data.split(",").get(1)
+						val userId = upd.callbackQuery.from.id
+						val chatId = upd.callbackQuery.message.chatId
+						val project = dbManager.getProjectByName(projectName, userId, chatId)
+						var String message = null
+						if(project === null) {
+							silent.send("Error while reading project name", upd.callbackQuery.message.chat.id)
+							return 
+						}
+						var workingTime = dbManager.getWorkingTime(project.ID)
+						if(workingTime === null) {
+							silent.send(
+								'''
+								Error while reading workingHours
+								''', upd.callbackQuery.message.chat.id
+							)
+							return
+						}
+						
+						message =
+						'''
+						Your working time for the project "«project.name»" is:
+						Hours: «workingTime.hours»
+						Minutes: «workingTime.minutes»
+						Seconds: «workingTime.seconds»	
+						 '''	
+          				silent.send(message, upd.callbackQuery.message.chat.id)
+            	],
+            	CALLBACK_QUERY,
+            	isProjectWorkingHours
+            )
+			.build
+	}
+	
+	
+	def Ability getWorkingTimeToday() {
+		return Ability.builder
+			.name("workingtimetoday")
+			.info("get todays working time")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx |
+				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId)
+				val HashMap<String, String> map = new HashMap
+				for(project : projects) {
+					map.put(project.name, '''workingTimeToday,«project.name»''')
+				}
+				if(projects == 0) {
+					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
+					return
+				}
+				sender.execute(new SendMessage()
+					.setText("Select one of your projects please:")
+	                .setChatId(ctx.chatId)
+	                .setReplyMarkup(KeyboardFactory.getKeyboard(map))
+	            )
+			]
+			.reply (
+				[upd |
+						val projectName = upd.callbackQuery.data.split(",").get(1)
+						val userId = upd.callbackQuery.from.id
+						val chatId = upd.callbackQuery.message.chatId
+						val project = dbManager.getProjectByName(projectName, userId, chatId)
+						var String message = null
+						if(project === null) {
+							silent.send("Error while reading project name", upd.callbackQuery.message.chat.id)
+							return 
+						}
+						var workingTime = dbManager.getWorkingTimeToday(project.ID)
+						if(workingTime === null) {
+							silent.send(
+								'''
+								Error while reading todays workingHours
+								''', upd.callbackQuery.message.chat.id
+							)
+							return
+						}
+						
+						message =
+						'''
+						Todays working time for the project "«project.name»" is:
+						Hours: «workingTime.hours»
+						Minutes: «workingTime.minutes»
+						Seconds: «workingTime.seconds»	
+						 '''	
+          				silent.send(message, upd.callbackQuery.message.chat.id)
+            	],
+            	CALLBACK_QUERY,
+            	isProjectWorkingTimeToday
+            )
+			.build
 	}
 
 		
@@ -324,7 +396,34 @@ class Bot extends AbilityBot {
     private def Predicate<Update> isProject() {
         return [upd | 
     		val project = upd.callbackQuery.data
-    		if(upd.callbackQuery.message.hasReplyMarkup){
+    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("newProject,")){
+    			val projects = newArrayList
+    			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
+    			return projects.filter[it == project].size > 0
+    		}
+    		return false
+        ];
+    }
+    
+    
+    @NotNull
+    private def Predicate<Update> isProjectWorkingHours() {
+        return [upd | 
+    		val project = upd.callbackQuery.data
+    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("workingTime,")){
+    			val projects = newArrayList
+    			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
+    			return projects.filter[it == project].size > 0
+    		}
+    		return false
+        ];
+    }
+    
+    @NotNull
+    private def Predicate<Update> isProjectWorkingTimeToday() {
+        return [upd | 
+    		val project = upd.callbackQuery.data
+    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("workingTimeToday,")){
     			val projects = newArrayList
     			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
     			return projects.filter[it == project].size > 0

@@ -9,6 +9,10 @@ import javax.persistence.EntityNotFoundException
 import javax.persistence.TypedQuery
 import javax.persistence.Query
 import com.mysticalducks.bots.timebot.model.Timetracker
+import java.math.BigDecimal
+import org.eclipse.xtend.lib.annotations.Data
+import org.eclipse.xtend.lib.annotations.Accessors
+import javax.persistence.NoResultException
 
 class DBManager {
 	new() {
@@ -204,11 +208,86 @@ class DBManager {
 			query.setParameter("userId", new User(userId))
 			query.setParameter("chatId", new Chat(chatId))
 			return query.singleResult as Timetracker
+		} catch(NoResultException e){
+			return null
 		} catch(Exception e) {
 			System.err.println("Error while open timetracker object")
 			System.err.println(e);
 		}
 		return null
+	}
+	
+	def getWorkingTime(int projectId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createNativeQuery('''
+			SELECT 
+				SUM(DATE_PART('hours', coalesce (t.endtime, now()) - t.starttime))::INTEGER as hours , 
+				SUM(DATE_PART('minutes', coalesce (t.endtime, now()) - t.starttime))::INTEGER as minutes, 
+				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, now()) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
+			FROM 
+				Timetracker t 
+			WHERE 
+				t.project_id = ?projectId ;''')
+			query.setParameter("projectId", projectId) 
+			val Object[] result = query.getSingleResult() as Object[];
+				
+			val workingTime = new WorkingTime
+			val hours = result.get(0)
+			val minutes = result.get(1)
+			val seconds = result.get(2)
+			
+			workingTime.hours = hours === null ? 0 : hours as Integer
+			workingTime.minutes = minutes === null ? 0 : minutes as Integer
+			workingTime.seconds = seconds === null ? 0 : seconds as Integer
+			
+			
+			return workingTime
+		} catch(Exception e) {
+			System.err.println("Error while getting working hours")
+			System.err.println(e);
+		}
+		return null
+		
+	}
+	
+	def getWorkingTimeToday(int projectId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createNativeQuery('''
+			SELECT 
+				SUM(DATE_PART('hours', t.endtime - t.starttime))::INTEGER as hours , 
+				SUM(DATE_PART('minutes', t.endtime - t.starttime))::INTEGER as minutes, 
+				SUM(ROUND(CAST(DATE_PART('seconds', t.endtime - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
+			FROM 
+				Timetracker t 
+			WHERE 
+				t.project_id = ?projectId AND
+				DATE_PART('day', coalesce (t.endtime, now())) = DATE_PART('day', (SELECT now())) AND
+				DATE_PART('year', coalesce (t.endtime, now())) = DATE_PART('year', (SELECT now()))
+				;''')
+			query.setParameter("projectId", projectId) 
+			val Object[] result = query.getSingleResult() as Object[];
+				
+			val workingTime = new WorkingTime
+			val hours = result.get(0)
+			val minutes = result.get(1)
+			val seconds = result.get(2)
+			
+			workingTime.hours = hours === null ? 0 : hours as Integer
+			workingTime.minutes = minutes === null ? 0 : minutes as Integer
+			workingTime.seconds = seconds === null ? 0 : seconds as Integer
+			
+			
+			return workingTime
+		} catch(Exception e) {
+			System.err.println("Error while getting working hours")
+			System.err.println(e);
+		}
+		return null
+		
 	}
 	
 	def Timetracker endTimetracking(int timetrackerId) {
@@ -391,5 +470,12 @@ class DBManager {
 	def List<Chat> selectChatStatement(){
 		return queryChatStatement("SELECT c FROM Chat c");
 	}
+	
 
 }
+
+@Accessors class WorkingTime {
+    	int hours
+    	int minutes
+    	int seconds
+    }

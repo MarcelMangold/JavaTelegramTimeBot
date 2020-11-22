@@ -12,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.AfterAll
 import java.util.Date
 import java.util.concurrent.TimeUnit
+import java.text.DecimalFormat
+import java.math.BigDecimal
 
 class DBManagerTest {
 	
@@ -105,7 +107,12 @@ class DBManagerTest {
 		assertEquals(project.ID, timetracker.project.ID)
 		assertEquals(null, timetracker.endTime)
 		val now = new Date
-		assertTrue(now.time - timetracker.startTime.time < 100)
+		assertTrue(now.time - timetracker.startTime.time < 300)
+		
+		var workingTime = db.getWorkingTime(project.ID)
+		assertEquals(0 , workingTime.hours)
+		assertEquals(0 , workingTime.minutes)
+		assertEquals(0 , workingTime.seconds)
 		
 		val openTimetracker = db.openTimetracker(userId, chatId)
 		assertEquals(null, openTimetracker.endTime)
@@ -117,6 +124,44 @@ class DBManagerTest {
 		TimeUnit.MILLISECONDS.sleep(500);
 		timetracker = db.endTimetracking(timetracker.ID)
 		assertTrue(timetracker.endTime.time - now.time < 600)
+		
+		timetracker.startTime = new Date(timetracker.startTime.time - 3600 * 1000)
+		db.updateStatement(timetracker)
+		
+		workingTime = db.getWorkingTime(project.ID)
+		assertEquals(1, workingTime.hours) 
+		assertEquals(0, workingTime.minutes) 
+		assertEquals(0, workingTime.seconds) 
+		
+		val timetracker50Mins = db.startTimetracking(project.ID, chatId, userId)
+		timetracker50Mins.endTime = new Date(timetracker50Mins.startTime.time + 3000 * 1000)
+		db.updateStatement(timetracker50Mins)
+		workingTime = db.getWorkingTime(project.ID)
+		assertEquals(1, workingTime.hours) 
+		assertEquals(50, workingTime.minutes) 
+		
+		//getTimeToday
+		var timetrackerYesterday= db.startTimetracking(project.ID, chatId, userId)
+		timetrackerYesterday.startTime = new Date(timetracker.startTime.time - 3600 * 1000 * 24)
+		timetrackerYesterday.endTime = new Date(timetracker.startTime.time - 3600 * 1000 * 23)
+		db.updateStatement(timetrackerYesterday)
+		
+		var timeToday = db.getWorkingTimeToday(project.ID)
+		assertEquals(1, timeToday.hours) 
+		assertEquals(50, timeToday.minutes) 
+		
+		workingTime = db.getWorkingTime(project.ID)
+		assertEquals(2, workingTime.hours) 
+		assertEquals(50, workingTime.minutes) 
+		
+		timetrackerYesterday = db.startTimetracking(project.ID, chatId, userId)
+		TimeUnit.MILLISECONDS.sleep(500);
+		
+		workingTime = db.getWorkingTimeToday(project.ID)
+		assertEquals(1, workingTime.hours) 
+		assertEquals(50, workingTime.minutes) 
+		assertTrue(1 > workingTime.seconds) 
+		
 		
 	}
 	
