@@ -258,9 +258,9 @@ class DBManager {
 			
 			val query = entityManager.createNativeQuery('''
 			SELECT 
-				SUM(DATE_PART('hours', t.endtime - t.starttime))::INTEGER as hours , 
-				SUM(DATE_PART('minutes', t.endtime - t.starttime))::INTEGER as minutes, 
-				SUM(ROUND(CAST(DATE_PART('seconds', t.endtime - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
+				SUM(DATE_PART('hours', coalesce (t.endtime, now()) - t.starttime))::INTEGER as hours , 
+				SUM(DATE_PART('minutes', coalesce (t.endtime, now()) - t.starttime))::INTEGER as minutes, 
+				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, now()) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
 			FROM 
 				Timetracker t 
 			WHERE 
