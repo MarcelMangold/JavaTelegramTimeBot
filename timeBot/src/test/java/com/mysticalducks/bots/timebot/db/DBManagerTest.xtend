@@ -1,19 +1,15 @@
 package com.mysticalducks.bots.timebot.db;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.Order
 import com.mysticalducks.bots.timebot.model.Chat
-import com.mysticalducks.bots.timebot.model.User
 import com.mysticalducks.bots.timebot.model.Project
-import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.AfterAll
+import com.mysticalducks.bots.timebot.model.Timetracker
 import java.util.Date
+import java.util.List
 import java.util.concurrent.TimeUnit
-import java.text.DecimalFormat
-import java.math.BigDecimal
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+
+import static org.junit.jupiter.api.Assertions.*
 
 class DBManagerTest {
 	
@@ -101,18 +97,18 @@ class DBManagerTest {
 		db.existsChat(chatId)
 		val project = db.newProject(userId, chatId, "testProject")
 		var timetracker = db.startTimetracking(project.ID, chatId, userId)
-		
 		assertEquals(userId, timetracker.user.ID)
 		assertEquals(chatId, timetracker.chat.ID)
 		assertEquals(project.ID, timetracker.project.ID)
-		assertEquals(null, timetracker.endTime)
-		val now = new Date
-		assertTrue(now.time - timetracker.startTime.time < 300)
 		
 		var workingTime = db.getWorkingTime(project.ID)
 		assertEquals(0 , workingTime.hours)
 		assertEquals(0 , workingTime.minutes)
-		assertEquals(0 , workingTime.seconds)
+		assertTrue( workingTime.seconds < 2)
+		
+		assertEquals(null, timetracker.endTime)
+		val now = new Date
+		assertTrue(now.time - timetracker.startTime.time < 300)
 		
 		val openTimetracker = db.openTimetracker(userId, chatId)
 		assertEquals(null, openTimetracker.endTime)
@@ -162,10 +158,24 @@ class DBManagerTest {
 		assertEquals(50, workingTime.minutes) 
 		assertTrue(1 > workingTime.seconds) 
 		
+		val workingTimeDetails = db.getWorkingTimeDetails(project.ID)
+		
+		checkTime(timetracker, workingTimeDetails.get(0))
+		checkTime(openTimetracker, workingTimeDetails.get(1))
+		checkTime(timetracker50Mins, workingTimeDetails.get(2))
+		checkTime(timetrackerYesterday, workingTimeDetails.get(3))
+		
 		
 	}
 	
-	
+	private def checkTime(Timetracker timetracker, Timetracker timetracker1) {
+		assertEquals(timetracker.ID, timetracker.ID)
+		assertEquals(timetracker.project, timetracker.project)
+		assertEquals(timetracker.chat, timetracker.chat)
+		assertEquals(timetracker.user, timetracker.user)
+		assertEquals(timetracker.startTime, timetracker.startTime)
+		assertEquals(timetracker.endTime, timetracker.endTime)
+	}
 	
 	//-----------------------------------------------------------------------------------
 	//							HELPER

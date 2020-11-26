@@ -13,6 +13,7 @@ import java.math.BigDecimal
 import org.eclipse.xtend.lib.annotations.Data
 import org.eclipse.xtend.lib.annotations.Accessors
 import javax.persistence.NoResultException
+import javax.rmi.CORBA.Tie
 
 class DBManager {
 	new() {
@@ -223,9 +224,10 @@ class DBManager {
 			
 			val query = entityManager.createNativeQuery('''
 			SELECT 
-				SUM(DATE_PART('hours', coalesce (t.endtime, now()) - t.starttime))::INTEGER as hours , 
-				SUM(DATE_PART('minutes', coalesce (t.endtime, now()) - t.starttime))::INTEGER as minutes, 
-				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, now()) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
+				SUM(DATE_PART('days', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as days , 
+				SUM(DATE_PART('hours', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as hours , 
+				SUM(DATE_PART('minutes', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as minutes, 
+				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, timezone('utc', now())) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
 			FROM 
 				Timetracker t 
 			WHERE 
@@ -234,11 +236,12 @@ class DBManager {
 			val Object[] result = query.getSingleResult() as Object[];
 				
 			val workingTime = new WorkingTime
-			val hours = result.get(0)
-			val minutes = result.get(1)
-			val seconds = result.get(2)
+			val hours = result.get(1)
+			val minutes = result.get(2)
+			val seconds = result.get(3)
+			val hoursAsInt = hours === null ? 0  : hours as Integer
 			
-			workingTime.hours = hours === null ? 0 : hours as Integer
+			workingTime.hours = (result.get(0) as Integer * 24) + hoursAsInt
 			workingTime.minutes = minutes === null ? 0 : minutes as Integer
 			workingTime.seconds = seconds === null ? 0 : seconds as Integer
 			
@@ -252,31 +255,56 @@ class DBManager {
 		
 	}
 	
+	def getWorkingTimeDetails(int projectId) {
+		try {
+			val entityManager = JPAUtility.getEntityManager();
+			
+			val query = entityManager.createQuery('''
+			SELECT 
+				t
+			FROM 
+				Timetracker t 
+			WHERE 
+				t.project = :project ''', Timetracker)
+			query.setParameter("project", getProject(projectId)) 
+			
+			val List<Timetracker> results = query.resultList
+			
+			return results
+		} catch(Exception e) {
+			System.err.println("Error while getting working time details")
+			System.err.println(e);
+		}
+		return null
+	}
+	
 	def getWorkingTimeToday(int projectId) {
 		try {
 			val entityManager = JPAUtility.getEntityManager();
 			
 			val query = entityManager.createNativeQuery('''
 			SELECT 
-				SUM(DATE_PART('hours', coalesce (t.endtime, now()) - t.starttime))::INTEGER as hours , 
-				SUM(DATE_PART('minutes', coalesce (t.endtime, now()) - t.starttime))::INTEGER as minutes, 
-				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, now()) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
+				SUM(DATE_PART('days', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as days , 
+				SUM(DATE_PART('hours', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as hours , 
+				SUM(DATE_PART('minutes', coalesce (t.endtime, timezone('utc', now())) - t.starttime))::INTEGER as minutes, 
+				SUM(ROUND(CAST(DATE_PART('seconds', coalesce (t.endtime, timezone('utc', now())) - t.starttime)/100*60 as numeric),0))::INTEGER as seconds
 			FROM 
 				Timetracker t 
 			WHERE 
 				t.project_id = ?projectId AND
-				DATE_PART('day', coalesce (t.endtime, now())) = DATE_PART('day', (SELECT now())) AND
-				DATE_PART('year', coalesce (t.endtime, now())) = DATE_PART('year', (SELECT now()))
+				DATE_PART('day', coalesce (t.endtime,  timezone('utc', now()))) = DATE_PART('day', (SELECT  timezone('utc', now()))) AND
+				DATE_PART('year', coalesce (t.endtime,  timezone('utc', now()))) = DATE_PART('year', (SELECT  timezone('utc', now())))
 				;''')
 			query.setParameter("projectId", projectId) 
 			val Object[] result = query.getSingleResult() as Object[];
 				
 			val workingTime = new WorkingTime
-			val hours = result.get(0)
-			val minutes = result.get(1)
-			val seconds = result.get(2)
+			val hours = result.get(1)
+			val minutes = result.get(2)
+			val seconds = result.get(3)
+			val hoursAsInt = hours === null ? 0  : hours as Integer
 			
-			workingTime.hours = hours === null ? 0 : hours as Integer
+			workingTime.hours = (result.get(0) as Integer * 24) + hoursAsInt
 			workingTime.minutes = minutes === null ? 0 : minutes as Integer
 			workingTime.seconds = seconds === null ? 0 : seconds as Integer
 			

@@ -1,43 +1,24 @@
 package com.mysticalducks.bots.timebot.bot;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.telegram.telegrambots.bots.TelegramLongPollingBot;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-
-import com.mysticalducks.bots.timebot.db.DBManager;
-import com.mysticalducks.bots.timebot.util.PropertyReader;
-import com.mysticalducks.bots.timebot.util.PropertyReader.PropertyType;
-import org.telegram.abilitybots.api.objects.Ability
-import org.telegram.abilitybots.api.objects.Ability.AbilityBuilder
-import org.telegram.abilitybots.api.bot.AbilityBot
-
-import static org.telegram.abilitybots.api.objects.Locality.ALL;
-import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC;
-import com.mysticalducks.bots.timebot.model.User
+import com.mysticalducks.bots.timebot.db.DBManager
+import com.mysticalducks.bots.timebot.util.CSVCreator
 import com.mysticalducks.bots.timebot.util.KeyboardFactory
-import javax.validation.constraints.NotNull
-import java.util.function.Predicate
-import static org.telegram.abilitybots.api.objects.Flag.*
-import java.util.Date
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import org.telegram.abilitybots.api.objects.ReplyFlow
-import org.telegram.abilitybots.api.objects.Reply
-import java.util.stream.Collectors
-import java.util.TimeZone
-import java.time.ZoneId
-import org.joda.time.Interval
-import org.joda.time.DateTime
-import org.joda.time.Minutes
-import org.joda.time.Duration
-import org.joda.time.Period
 import java.util.HashMap
+import java.util.TimeZone
+import java.util.function.Predicate
+import java.util.stream.Collectors
+import javax.validation.constraints.NotNull
+import org.joda.time.DateTime
+import org.joda.time.Period
+import org.telegram.abilitybots.api.bot.AbilityBot
+import org.telegram.abilitybots.api.objects.Ability
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage
+import org.telegram.telegrambots.meta.api.objects.Update
+
+import static org.telegram.abilitybots.api.objects.Flag.*
+import static org.telegram.abilitybots.api.objects.Locality.ALL
+import static org.telegram.abilitybots.api.objects.Privacy.PUBLIC
 
 class Bot extends AbilityBot {
 	
@@ -74,7 +55,6 @@ class Bot extends AbilityBot {
         	.locality(ALL) 
 			.input(0)
 			.action[ ctx | 
-				println(ctx)
 				silent.sendMd(
 				'''
 				The following options are available:
@@ -374,13 +354,70 @@ class Bot extends AbilityBot {
 						Seconds: «workingTime.seconds»	
 						 '''	
           				silent.send(message, upd.callbackQuery.message.chat.id)
+
             	],
             	CALLBACK_QUERY,
             	isProjectWorkingTimeToday
             )
 			.build
 	}
-
+	
+	def Ability getWorkingTimeAsCSV() {
+		return Ability.builder
+			.name("workingtimecsv")
+			.info("get working time as csv")
+			.privacy(PUBLIC)  
+        	.locality(ALL) 
+			.input(0)
+			.action[ ctx |
+				val projects = dbManager.getProjects(ctx.user.id, ctx.chatId)
+				val HashMap<String, String> map = new HashMap
+				for(project : projects) {
+					map.put(project.name, '''workingTimeCSV,«project.name»''')
+				}
+				if(projects == 0) {
+					silent.send("No projects found. Please create a project with /newproject.",  ctx.chatId())
+					return
+				}
+				sender.execute(new SendMessage()
+					.setText("Select one of your projects please:")
+	                .setChatId(ctx.chatId)
+	                .setReplyMarkup(KeyboardFactory.getKeyboard(map))
+	            )
+			]
+			.reply (
+				[upd |
+						val projectName = upd.callbackQuery.data.split(",").get(1)
+						val userId = upd.callbackQuery.from.id
+						val chatId = upd.callbackQuery.message.chatId
+						val project = dbManager.getProjectByName(projectName, userId, chatId)
+						var String message = null
+						if(project === null) {
+							silent.send("Error while reading project name", upd.callbackQuery.message.chat.id)
+							return 
+						}
+						var workingTimes = dbManager.getWorkingTimeDetails(project.ID)
+						if(workingTime === null) {
+							silent.send(
+								'''
+								Error while reading todays workingHours
+								''', upd.callbackQuery.message.chat.id
+							)
+							return
+						}
+						
+          				val document = new SendDocument().setDocument("test.csv",  CSVCreator.stringToByteArrayInputStream(CSVCreator.generateCSVAsString(workingTimes)))
+	         		 	document.chatId = chatId
+	          			document.execute
+            	],
+            	CALLBACK_QUERY,
+            	isProjectWorkingTimeCSV
+            )
+			.build
+	}
+	
+	
+	
 		
 	override creatorId() {
 		return 123
@@ -395,13 +432,7 @@ class Bot extends AbilityBot {
 	@NotNull
     private def Predicate<Update> isProject() {
         return [upd | 
-    		val project = upd.callbackQuery.data
-    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("newProject,")){
-    			val projects = newArrayList
-    			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
-    			return projects.filter[it == project].size > 0
-    		}
-    		return false
+        	upd.isProject("newProject,")
         ];
     }
     
@@ -409,29 +440,35 @@ class Bot extends AbilityBot {
     @NotNull
     private def Predicate<Update> isProjectWorkingHours() {
         return [upd | 
-    		val project = upd.callbackQuery.data
-    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("workingTime,")){
-    			val projects = newArrayList
-    			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
-    			return projects.filter[it == project].size > 0
-    		}
-    		return false
+        	upd.isProject("workingTime,")
         ];
     }
     
     @NotNull
     private def Predicate<Update> isProjectWorkingTimeToday() {
         return [upd | 
-    		val project = upd.callbackQuery.data
-    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains("workingTimeToday,")){
+        	upd.isProject("workingTimeToday,")
+        ];
+    }
+ 
+    @NotNull
+    private def Predicate<Update> isProjectWorkingTimeCSV() {
+        return [upd | 
+    		upd.isProject("workingTimeCSV,")
+        ];
+    }   
+    
+
+	private def isProject(Update upd, String s) {
+		val project = upd.callbackQuery.data
+    		if(upd.callbackQuery.message.hasReplyMarkup && project.contains(s)){
     			val projects = newArrayList
     			upd.callbackQuery.message.replyMarkup.keyboard.forEach[it.forEach[projects.add(it.callbackData)]]
     			return projects.filter[it == project].size > 0
     		}
     		return false
-        ];
-    }
-    
+		
+	}
     
     @NotNull
     private def Predicate<Update> isTime() {
